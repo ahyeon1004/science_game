@@ -10,7 +10,7 @@
 <button id="start" class="primary start-button">게임 시작 <span>↗</span></button><button id="friends" class="secondary-button">온라인 자동 매칭 →</button>
 
 </section>
-<div id="lobby-scene-caption" class="scene-caption"><span>ANTARCTICA · 90° S</span><strong>차가운 빙판, 뜨거운 눈치 싸움.</strong><small>크기가 같고 방향은 반대. 부딪히면 알게 될 거야.</small></div>
+
 <section id="game-ui" hidden><div id="network-bar" class="network-bar" hidden></div>
 <div class="match-top"><div><span class="eyebrow" id="round-label">ROUND 01</span><h2 id="state-title">어디로 밀어볼까?</h2></div><div class="turn-tag" id="turn-label">TURN 01</div></div>
 <div class="live-metrics" aria-label="실시간 경기 정보"><div><span>내 속력</span><strong id="speed">0.0 <small>m/s</small></strong></div><div><span>남은 펭귄</span><strong id="remaining">5 <small>마리</small></strong></div><div><span>이번 기록</span><strong id="learning">0 <small>점</small></strong></div></div>
@@ -18,7 +18,7 @@
 <div class="view-hint" id="view-hint" hidden>따라가기 시점 · 좌우 드래그로 방향 / 위아래로 세기</div><div id="labels" class="penguin-labels" aria-hidden="true"></div>
 <div id="collision-notice" class="collision-notice" role="status" aria-live="polite" hidden></div>
 <div class="control-dock"><div class="aim-copy"><span class="eyebrow" id="control-label">YOUR MOVE</span><strong id="aim-status">빙판을 드래그해서 조준해!</strong><small id="control-help">드래그 방향으로 돌진 · 길게 끌수록 강하게</small></div><div class="power-control"><label for="power">돌진 세기 <strong id="power-value">50%</strong></label><input id="power" type="range" min="10" max="100" value="50" aria-label="돌진 세기"></div><button id="launch" class="primary">돌진 확정 <span>↗</span></button></div>
-<div class="stage-foot"><span>마지막까지 남으면 1점 · 먼저 3점이면 우승</span><button id="help" class="text-btn">조작법 / 과학 개념</button></div>
+<div class="stage-foot"><span>빙판 축소 +10점 · 조준 명중 +15점</span><button id="help" class="text-btn">조작법 / 과학 개념</button></div>
 </section>
 </main>
 <div id="modal" class="modal" hidden><section class="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1"><span id="modal-kicker" class="eyebrow"></span><h2 id="modal-title"></h2><div id="modal-content"></div><div id="modal-actions" class="modal-actions"></div></section></div>

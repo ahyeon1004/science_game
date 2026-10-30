@@ -103,10 +103,20 @@ new ResizeObserver(resize).observe(world);resize();
 function setState(next){phase=next;refreshControls();}
 function refreshControls(){const planning=phase==='plan'&&!paused&&(!online||!onlineLocked),spectating=planning&&!bodies[0]?.alive;$('launch').disabled=!planning||(!aimed&&!spectating);$('power').disabled=!planning||spectating;$('launch').innerHTML=spectating?'다음 턴 <span>→</span>':'돌진 확정 <span>↗</span>';$('control-label').textContent=practice?'PRACTICE':spectating?'SPECTATING':phase==='simulate'?'ON THE ICE':'YOUR MOVE';$('aim-status').textContent=phase==='simulate'?'미끄러지는 중…':phase==='countdown'?'다 같이, 하나 둘 셋!':spectating?'친구들의 승부를 지켜봐!':aimed?'방향 준비 완료!':'빙판을 드래그해서 조준해!';$('control-help').textContent=spectating?'다음 턴은 자동으로 진행돼요.':'좌우 드래그로 방향 · 위아래로 세기';aimArrow.visible=planning&&bodies[0]?.alive;playerRing.visible=phase!=='lobby'&&bodies[0]?.alive;}
 function scoreUI(){$('round-label').textContent=practice?'충돌 연습':`LEVEL ${onlineState?.levels?.[onlineState.you]||round}`;$('turn-label').textContent=`TURN ${String(turn).padStart(2,'0')}`;}
-function openModal(kicker,title,html,actions){phaseBeforeModal=phase;paused=true;$('pause').textContent='일시정지';$('modal-kicker').textContent=kicker;$('modal-title').textContent=title;$('modal-content').innerHTML=html;$('modal-actions').replaceChildren();for(const act of actions){const b=document.createElement('button');b.className=act.secondary?'text-btn':'primary';b.textContent=act.label;b.onclick=act.click;$('modal-actions').appendChild(b);}$('modal').hidden=false;setTimeout(()=>$('modal').querySelector('button:not(:disabled)')?.focus(),0);}
+function openModal(kicker,title,html,actions){phaseBeforeModal=phase;paused=true;$('pause').textContent='일시정지';$('modal-kicker').textContent=kicker;$('modal-title').textContent=title;$('modal-content').innerHTML=html;$('modal-actions').replaceChildren();for(const act of actions){const b=document.createElement('button');b.className=act.secondary?'text-btn':act.large?'primary replay-button':'primary';b.textContent=act.label;b.onclick=act.click;$('modal-actions').appendChild(b);}$('modal').hidden=false;setTimeout(()=>$('modal').querySelector('button:not(:disabled)')?.focus(),0);}
 function closeModal(){ $('modal').hidden=true;paused=false;refreshControls();}
-function showConcept(){
- openModal('뉴턴 제3법칙 / 작용·반작용','내가 밀면, 나도 힘을 받아.',`<div class="lesson-art">← <span>●　●</span> →</div><p>두 펭귄이 서로 밀면 <strong>동시에, 크기가 같고 방향이 반대인 힘</strong>을 주고받아요. 이것을 작용·반작용이라고 해요.</p><p>두 힘은 <strong>서로 다른 펭귄</strong>에 작용하므로 한 펭귄에서 서로 상쇄되지 않아요.</p><p>힘의 크기는 같아도, 충돌 전 속도나 질량에 따라 움직임의 변화는 다를 수 있어요.</p>`,[{label:'퀴즈 3개 풀어보기 →',click:()=>{introQuizIndex=0;showIntroQuiz();}}]);
+function showConcept(step=0){
+ const lessons=[
+  ['힘은 서로 주고받아요.','한 펭귄이 다른 펭귄을 밀면, 상대 펭귄도 동시에 나에게 힘을 가해요. 이것을 <strong>작용·반작용</strong>이라고 해요.'],
+  ['크기는 같고, 방향은 반대예요.','내가 상대를 10 N으로 밀면 상대도 나를 <strong>10 N</strong>으로 밀어요. 두 힘의 크기는 같고 방향은 반대예요.'],
+  ['서로 다른 펭귄에 작용해요.','내가 가하는 힘은 <strong>상대에게</strong>, 상대가 가하는 힘은 <strong>나에게</strong> 작용해요. 서로 다른 물체에 작용하므로 한 물체에서 서로 상쇄되지 않아요.'],
+  ['움직임이 꼭 같지는 않아요.','같은 크기의 힘을 받아도 질량이나 충돌 전 속도에 따라 움직임은 달라질 수 있어요. 게임에서는 <strong>주황색 힘 화살표</strong>로 작용·반작용을 확인해봐요.']
+ ];
+ const [title,text]=lessons[step];
+ openModal(`작용·반작용 개념 ${step+1} / ${lessons.length}`,title,`<div class="lesson-art">← <span>●　●</span> →</div><p>${text}</p>`,[
+ {label:step===lessons.length-1?'퀴즈 3개 풀어보기 →':'다음 개념 →',click:()=>{if(step<lessons.length-1)showConcept(step+1);else{introQuizIndex=0;showIntroQuiz();}}},
+ ...(step?[{label:'이전 개념',secondary:true,click:()=>showConcept(step-1)}]:[])
+ ]);
 }
 function quizAnswers(q,onAnswer){
  for(const button of $('modal-content').querySelectorAll('[data-answer]'))button.onclick=()=>{
@@ -123,22 +133,33 @@ function showIntroQuiz(){
  openModal(`개념 확인 ${introQuizIndex+1} / 3`,q.q,questionMarkup(q),[]);
  quizAnswers(q,()=>{const next=document.createElement('button');next.className='primary';next.textContent=introQuizIndex===2?'게임 준비하기 →':'다음 문제 →';next.onclick=()=>{introQuizIndex++;if(introQuizIndex<3)showIntroQuiz();else{onboardingDone=true;closeModal();}};$('modal-actions').appendChild(next);next.focus();});
 }
-function showHelp(){const wasPaused=paused;openModal('HOW TO PLAY / 남극 생존 안내','방향을 정하고, 함께 돌진!',`<p><strong>1.</strong> 좌우로 드래그하거나 방향키를 눌러 바라볼 방향을 정해요. 위아래로 드래그하면 돌진 세기가 달라져요. 힘은 아래 슬라이더로도 바꿀 수 있어요.</p><p><strong>2.</strong> ‘돌진 확정’을 누르면 모두 동시에 출발해요. 움직임이 멈추면 다음 턴이에요.</p><p><strong>3.</strong> 마지막까지 남으면 1점, 먼저 3점이면 우승! 모두 떨어지면 무승부예요. 탈락자가 생기면 다음 턴부터 사각 빙판이 작아져요. 오랫동안 승부가 안 나도 조금씩 줄어요.</p><p><strong>뉴턴 제3법칙</strong> · 충돌 때의 주황색 화살표는 두 펭귄에 작용하는 같은 크기의 반대 방향 힘이에요. 조준 중에는 내 화살표만 보여요. 출발하면 모두의 이동 방향을 목도리 색 화살표로 표시해요.</p><p>키보드: ← → 방향 회전 · ↑ ↓ 힘 조절 · Enter 돌진 · P 일시정지</p>`,[{label:'알겠어, 계속할게',click:()=>{closeModal();if(wasPaused)pauseGame();}}]);}
-function beginInterface(){document.body.classList.remove('lobby-view');$('lobby').hidden=true;$('lobby-scene-caption').hidden=true;$('game-ui').hidden=false;$('pause').hidden=$('restart').hidden=false;count=Number($('players').value);requestAnimationFrame(resize);}
+function showHelp(){const wasPaused=paused;openModal('HOW TO PLAY / 남극 생존 안내','방향을 정하고, 함께 돌진!',`<p><strong>1.</strong> 좌우로 드래그하거나 방향키를 눌러 바라볼 방향을 정해요. 위아래로 드래그하면 돌진 세기가 달라져요. 힘은 아래 슬라이더로도 바꿀 수 있어요.</p><p><strong>2.</strong> ‘돌진 확정’을 누르면 모두 동시에 출발해요. 움직임이 멈추면 다음 턴이에요.</p><p><strong>3.</strong> 마지막까지 남으면 라운드 승리! 모두 떨어지면 무승부예요. 라운드가 끝나면 퀴즈 3개를 풀고 홈으로 돌아가요. 탈락자가 생기면 다음 턴부터 사각 빙판이 작아져요. 오랫동안 승부가 안 나도 조금씩 줄어요.</p><p><strong>뉴턴 제3법칙</strong> · 충돌 때의 주황색 화살표는 두 펭귄에 작용하는 같은 크기의 반대 방향 힘이에요. 조준 중에는 내 화살표만 보여요. 출발하면 모두의 이동 방향을 목도리 색 화살표로 표시해요.</p><p>키보드: ← → 방향 회전 · ↑ ↓ 힘 조절 · Enter 돌진 · P 일시정지</p>`,[{label:'알겠어, 계속할게',click:()=>{closeModal();if(wasPaused)pauseGame();}}]);}
+function beginInterface(){document.body.classList.remove('lobby-view');$('lobby').hidden=true;$('game-ui').hidden=false;$('pause').hidden=$('restart').hidden=false;count=Number($('players').value);requestAnimationFrame(resize);}
 async function startMatch(){
  if(!onboardingDone){showConcept();return;}if(!await ensureLogin(startMatch))return;
  if(online){online.leave();online=null;onlineState=null;}openModal('혼자 하기','남극 경기장을 준비하고 있어요.',`<p>기록은 로그인한 계정에 자동 저장돼요.</p>`,[]);connectRoom(true);
 }
 async function ensureLogin(after){await IceAccount.ready;if(IceAccount.user)return true;notify('게임 시작 전에 로그인해주세요.');showAuth(false,after);return false;}
-function showAuth(register=false,after){
+async function showAuth(register=false,after){
+ await IceAccount.ready;
  openModal('나의 남극 기록',register?'닉네임으로 회원가입':'로그인하고 기록을 이어가요.',`<div class="room-fields"><label>닉네임<input id="auth-name" maxlength="12" autocomplete="username" placeholder="2~12자"></label><label>비밀번호<input id="auth-password" type="password" minlength="6" maxlength="128" autocomplete="${register?'new-password':'current-password'}" placeholder="6자 이상"></label></div><p id="auth-error" class="room-error" role="status"></p>`,[
  {label:register?'회원가입하고 시작':'로그인',click:async()=>{const nickname=$('auth-name').value,password=$('auth-password').value;Array.from($('modal-actions').children).forEach(b=>b.disabled=true);try{const result=await IceAccount.request('/api/auth/'+(register?'register':'login'),{nickname,password});IceAccount.update(result.user);closeModal();if(after)after();}catch(e){$('auth-error').textContent=e.message;Array.from($('modal-actions').children).forEach(b=>b.disabled=false);}}},
  {label:register?'로그인으로':'회원가입',secondary:true,click:()=>showAuth(!register,after)},
  {label:'닫기',secondary:true,click:closeModal}
  ]);
 }
-function showAccount(){if(!IceAccount.user){showAuth();return;}const u=IceAccount.user;openModal('나의 기록',escapeHTML(u.nickname),`<div class="result-line"><span>최고기록</span><strong>${u.best}점</strong></div><div class="result-line"><span>누적 점수</span><strong>${u.total}점</strong></div><div class="result-line"><span>최고 레벨</span><strong>${u.level}</strong></div><p>레벨 통과 +10점 · 상대를 밀쳐 탈락시키면 +15점<br>한 경기의 최고 점수로 랭킹을 정해요.</p>`,[{label:'랭킹 보기',click:showRanking},{label:'로그아웃',secondary:true,click:async()=>{if(online)goHome();await IceAccount.request('/api/auth/logout',{});IceAccount.update(null);closeModal();}},{label:'닫기',secondary:true,click:closeModal}]);}
-async function showRanking(){try{const {ranking}=await IceAccount.request('/api/ranking');openModal('남극 최고기록','펭귄 랭킹',ranking.length?`<div class="ranking-table">${ranking.map(u=>`<div class="result-line"><span>${u.rank}. ${escapeHTML(u.nickname)}</span><strong>${u.best}점</strong></div>`).join('')}</div>`:'<p>아직 기록이 없어요. 첫 기록의 주인공이 되어봐요!</p>',[{label:'닫기',click:closeModal}]);}catch(e){notify(e.message);}}
+function showAccount(){if(!IceAccount.user){showAuth();return;}const u=IceAccount.user;openModal('나의 기록',escapeHTML(u.nickname),`<div class="result-line"><span>최고기록</span><strong>${u.best}점</strong></div><div class="result-line"><span>누적 점수</span><strong>${u.total}점</strong></div><div class="result-line"><span>최고 레벨</span><strong>${u.level}</strong></div><p>빙판 축소 +10점 · 조준해서 충돌하면 +15점<br>한 경기의 최고 점수로 랭킹을 정해요.</p>`,[{label:'랭킹 보기',click:()=>showRanking()},{label:'로그아웃',secondary:true,click:async()=>{if(online)goHome();await IceAccount.request('/api/auth/logout',{});IceAccount.update(null);closeModal();}},{label:'닫기',secondary:true,click:closeModal}]);}
+async function showRanking(mode='personal'){
+ try{
+  const user=IceAccount.user;
+  const data=mode==='personal'?(user?await IceAccount.request('/api/personal-ranking'):{records:[]}):await IceAccount.request('/api/ranking');
+  const tabs=`<div class="rank-tabs"><button data-ranking="personal" class="${mode==='personal'?'selected':''}">내 최고기록 랭킹</button><button data-ranking="global" class="${mode==='global'?'selected':''}">전체 펭귄 랭킹</button></div>`;
+  const rows=mode==='personal'?data.records:data.ranking;
+  const content=rows.length?`<div class="ranking-table">${rows.map(r=>{const detail=mode==='global'?escapeHTML(r.nickname):r.mode==='previous'?'이전 최고기록':`${r.mode==='solo'?'혼자 하기':'온라인'} · ${new Date(r.at).toLocaleDateString('ko-KR',{timeZone:'Asia/Seoul',month:'numeric',day:'numeric'})}`;return `<div class="result-line"><span>${r.rank}. ${detail}</span><strong>${mode==='global'?r.best:r.score}점</strong></div>`;}).join('')}</div>`:`<p>${mode==='personal'&&!user?'로그인하면 나의 역대 기록을 확인할 수 있어요.':'아직 기록이 없어요. 첫 기록을 만들어봐요!'}</p>`;
+  openModal(mode==='personal'?'내 경기 기록을 높은 점수순으로':'다른 사람들의 최고기록과 비교',mode==='personal'?'내 최고기록 랭킹':'전체 펭귄 랭킹',tabs+content,[{label:'닫기',click:closeModal}]);
+  for(const button of $('modal-content').querySelectorAll('[data-ranking]'))button.onclick=()=>showRanking(button.dataset.ranking);
+ }catch(e){notify(e.message);}
+}
 function setPower(value){power=Math.min(1,Math.max(.1,value));$('power').value=Math.round(power*100);$('power-value').textContent=`${Math.round(power*100)}%`;}
 function launchTurn(){if(online)sendOnlinePlan();}
 function forcePair(a,b,nx,nz,impulse){
@@ -162,22 +183,24 @@ function maybeShowDefeat(dt){
  deathDelay+=dt;if(deathDelay<.7||!$('modal').hidden)return;
  if(phase==='quiz'||phase==='finished'){deathPending=false;return;}
  deathPending=false;deathShown=true;deathPopupActive=true;
- const q=QUIZZES[Math.floor(Math.random()*QUIZZES.length)];
- openModal('작용·반작용 퀴즈',q.q,questionMarkup(q),[{label:'다시 하기 →',click:()=>{deathPopupActive=false;if(online){retryCurrentMode();}else startMatch();}}]);
- const retry=$('modal-actions').children[0];retry.disabled=true;
- quizAnswers(q,()=>{retry.disabled=false;retry.focus();});
+ showEndQuiz(0,[...QUIZZES].sort(()=>Math.random()-.5).slice(0,3));
 }
-function retryCurrentMode(){const solo=onlineState?.solo;goHome();if(solo)startMatch();else openFriends();}
+function showEndQuiz(index,questions){
+ const q=questions[index],last=index===2;
+ openModal(`작용·반작용 퀴즈 ${index+1} / 3`,q.q,questionMarkup(q),[]);
+ quizAnswers(q,()=>{const next=document.createElement('button');next.className=last?'primary replay-button':'primary';next.textContent=last?'홈으로 돌아가기 →':'다음 문제 →';next.onclick=()=>last?retryCurrentMode():showEndQuiz(index+1,questions);$('modal-actions').appendChild(next);next.focus();});
+}
+function retryCurrentMode(){goHome();}
 function pauseGame(){if(online&&onlineState?.solo){online.action('pause').catch(e=>notify(e.message));return;}if(online){notify('온라인 경기는 함께 진행돼서 일시정지할 수 없어요.');return;}if(phase==='lobby'||!$('modal').hidden)return;paused=!paused;$('pause').textContent=paused?'계속하기':'일시정지';$('banner').textContent=paused?'잠깐 쉬는 중 · 계속하기를 누르면 이어져요.':'';drag=null;}
 function confirmRestart(){if(online){notify('경기가 끝나면 다시 자동 매칭할 수 있어요.');return;}if(phase==='lobby')return;openModal('NEW EXPEDITION','새 경기를 시작할까?',`<p>현재 경기 점수와 학습 점수가 초기화돼요.</p>`,[{label:'새 경기 시작',click:startMatch},{label:'이어서 하기',secondary:true,click:closeModal}]);}
-function goHome(){if(online){online.leave();online=null;onlineState=null;$('network-bar').hidden=true;}closeModal();paused=false;practice=false;phase='lobby';document.body.classList.add('lobby-view');$('lobby').hidden=false;$('lobby-scene-caption').hidden=false;$('game-ui').hidden=true;$('pause').hidden=$('restart').hidden=true;iceGroup.scale.set(1,1,1);createBodies(5,true);aimArrow.visible=playerRing.visible=false;requestAnimationFrame(resize);}
+function goHome(){if(online){online.leave();online=null;onlineState=null;$('network-bar').hidden=true;}closeModal();paused=false;practice=false;phase='lobby';document.body.classList.add('lobby-view');$('lobby').hidden=false;$('game-ui').hidden=true;$('pause').hidden=$('restart').hidden=true;iceGroup.scale.set(1,1,1);createBodies(5,true);aimArrow.visible=playerRing.visible=false;requestAnimationFrame(resize);}
 renderer.domElement.addEventListener('pointerdown',e=>{if((online&&onlineLocked)||phase!=='plan'||paused||!bodies[0].alive||e.button>0)return;drag={x:e.clientX,y:e.clientY,angle,id:e.pointerId};renderer.domElement.setPointerCapture(e.pointerId);e.preventDefault();});
 renderer.domElement.addEventListener('pointermove',e=>{if(!drag||paused||phase!=='plan')return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;angle=drag.angle+dx*.008;if(Math.abs(dy)>8)setPower(.25+Math.abs(dy)/180);aimed=true;refreshControls();});
 renderer.domElement.addEventListener('pointerup',e=>{if(!drag)return;drag=null;if(renderer.domElement.hasPointerCapture(e.pointerId))renderer.domElement.releasePointerCapture(e.pointerId);});
 renderer.domElement.addEventListener('pointercancel',()=>drag=null);
 $('power').oninput=e=>setPower(Number(e.target.value)/100);$('launch').onclick=launchTurn;
 $('start').onclick=startMatch;$('help').onclick=showHelp;$('pause').onclick=pauseGame;$('restart').onclick=confirmRestart;
-$('friends').onclick=openFriends;$('account').onclick=showAccount;$('leaderboard').onclick=showRanking;
+$('friends').onclick=openFriends;$('account').onclick=showAccount;$('leaderboard').onclick=()=>showRanking();
 $('home').onclick=e=>{e.preventDefault();if(phase==='lobby')return;openModal('BACK TO BASE','첫 화면으로 돌아갈까?',`<p>진행 중인 경기 점수는 초기화돼요.</p>`,[{label:'첫 화면으로',click:goHome},{label:'이어서 하기',secondary:true,click:closeModal}]);};
 $('sound').onclick=()=>{muted=!muted;$('sound').textContent=muted?'소리 꺼짐':'소리 켜짐';$('sound').setAttribute('aria-label',muted?'소리 켜기':'소리 끄기');if(!muted)sound(660,.12);};
 PALETTE.forEach((color,i)=>{const b=document.createElement('button');b.className='swatch';b.style.setProperty('--swatch',color);b.setAttribute('aria-label',['빨간색','노란색','초록색','분홍색','하늘색'][i]+' 목도리');b.setAttribute('aria-pressed',i===0?'true':'false');b.onclick=()=>{scarfIndex=i;Array.from($('colors').children).forEach((c,j)=>c.setAttribute('aria-pressed',i===j?'true':'false'));createBodies(5,true);};$('colors').appendChild(b);});
@@ -259,25 +282,22 @@ function receiveOnline(s){
   if(event.type==='collision'){const a=bodies.find(b=>b.serverId===event.a),b=bodies.find(b=>b.serverId===event.b);if(a&&b)forcePair(a,b,event.nx,event.nz,event.impulse);}
   if(event.type==='shrink')notify('탈락자가 생겨 사각 빙판이 작아졌어요.');
   if(event.type==='launch')sound(720,.15);
-  if(event.type==='points'&&event.slot===s.you)notify(event.reason==='level'?'레벨 통과! +10점':'밀치기 성공! +15점');
+  if(event.type==='points'&&event.slot===s.you)notify(event.reason==='shrink'?'빙판 축소! +10점':'조준 명중! +15점');
  }
  if(s.phase==='countdown')$('banner').textContent='READY… 모두 동시에 출발!';
  else if(s.phase==='round-end')$('banner').textContent=s.winner<0?'모두 첨벙! 무승부':`${s.bodies[s.winner].name}의 라운드 승리!`;
  else $('banner').textContent='';
  if(s.phase==='quiz')showOnlineQuiz(s);
- if(s.phase==='finished'&&prior!=='finished'){
-  const win=s.scores.indexOf(Math.max(...s.scores));
-  openModal('EXPEDITION COMPLETE / 친구들과의 남극 대전',win===s.you?'남극 챔피언, 바로 나!':s.bodies[win].name+' 우승!',`<div class="result-line"><span>내 경기 점수</span><strong>${s.scores[s.you]} / 3점</strong></div><div class="result-line"><span>이번 기록</span><strong>${s.points[s.you]}점</strong></div><p>작용과 반작용은 동시에 발생하고 크기는 같으며 방향은 반대예요. 서로 다른 물체에 작용해요.</p>`,[{label:'다시 하기 →',click:()=>retryCurrentMode()},{label:'처음으로',secondary:true,click:goHome}]);
- }
+ if(s.phase==='finished'&&prior!=='finished'){goHome();return;}
 }
 function showOnlineQuiz(s){
- const signature=JSON.stringify([s.round,s.feedback]);if(quizRenderKey===signature)return;quizRenderKey=signature;
- const q=s.quiz;openModal(`ROUND ${s.round} / 친구들과 과학 한 입`,'같이 밀었으니, 같이 배워요.',`<p><strong>${escapeHTML(q.q)}</strong></p><div class="quiz-answers">${q.a.map((a,i)=>`<button class="quiz-option" data-answer="${i}">${i+1}. ${escapeHTML(a)}</button>`).join('')}</div><div id="quiz-feedback" class="quiz-feedback" aria-live="polite"></div>`,[]);
+ const signature=JSON.stringify([s.round,s.quiz.number,s.feedback]);if(quizRenderKey===signature)return;quizRenderKey=signature;
+ const q=s.quiz;openModal(`작용·반작용 퀴즈 ${s.quiz.number} / 3`,'다음 게임 전에, 과학 한 입.',`<p><strong>${escapeHTML(q.q)}</strong></p><div class="quiz-answers">${q.a.map((a,i)=>`<button class="quiz-option" data-answer="${i}">${i+1}. ${escapeHTML(a)}</button>`).join('')}</div><div id="quiz-feedback" class="quiz-feedback" aria-live="polite"></div>`,[]);
  for(const btn of $('modal-content').querySelectorAll('[data-answer]')){
   if(s.feedback){btn.disabled=true;const i=Number(btn.dataset.answer);if(i===s.feedback.correct)btn.classList.add('correct');if(!s.feedback.ok&&i===s.feedback.answer)btn.classList.add('wrong');}
   else btn.onclick=async()=>{for(const b of $('modal-content').querySelectorAll('[data-answer]'))b.disabled=true;try{await online.action('answer',{answer:Number(btn.dataset.answer)});}catch(e){notify(e.message);quizRenderKey='';showOnlineQuiz(onlineState);}};
  }
- if(s.feedback){$('quiz-feedback').innerHTML=`<strong>${s.feedback.ok?'정답이에요!':'해설을 확인해봐요.'}</strong><br>${escapeHTML(s.feedback.why)}`;const next=document.createElement('button');next.className='primary';next.textContent='준비 완료 · 다음으로 →';next.onclick=async()=>{try{await online.action('continue');next.disabled=true;next.textContent='친구가 준비될 때까지 기다려요…';}catch(e){notify(e.message);}};$('modal-actions').appendChild(next);}
+ if(s.feedback){$('quiz-feedback').innerHTML=`<strong>${s.feedback.ok?'정답이에요!':'해설을 확인해봐요.'}</strong><br>${escapeHTML(s.feedback.why)}`;const next=document.createElement('button');next.className=s.quiz.number===3?'primary replay-button':'primary';next.textContent=s.quiz.number===3?'홈으로 돌아가기 →':'다음 문제 →';next.onclick=async()=>{if(s.quiz.number===3){goHome();return;}try{await online.action('continue');next.disabled=true;next.textContent='다음 게임 준비 중…';}catch(e){notify(e.message);}};$('modal-actions').appendChild(next);}
 }
 async function sendOnlinePlan(){if(!onlineState||onlineState.phase!=='plan'||onlineLocked||!aimed||paused||!bodies[0].alive)return;
  onlineLocked=true;refreshControls();try{await online.action('plan',{angle,power});}catch(e){onlineLocked=false;refreshControls();notify(e.message);}}
