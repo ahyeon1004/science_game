@@ -193,7 +193,7 @@ function showEndQuiz(index,questions){
 function retryCurrentMode(){goHome();}
 function pauseGame(){if(online&&onlineState?.solo){online.action('pause').catch(e=>notify(e.message));return;}if(online){notify('온라인 경기는 함께 진행돼서 일시정지할 수 없어요.');return;}if(phase==='lobby'||!$('modal').hidden)return;paused=!paused;$('pause').textContent=paused?'계속하기':'일시정지';$('banner').textContent=paused?'잠깐 쉬는 중 · 계속하기를 누르면 이어져요.':'';drag=null;}
 function confirmRestart(){if(online){notify('경기가 끝나면 다시 자동 매칭할 수 있어요.');return;}if(phase==='lobby')return;openModal('NEW EXPEDITION','새 경기를 시작할까?',`<p>현재 경기 점수와 학습 점수가 초기화돼요.</p>`,[{label:'새 경기 시작',click:startMatch},{label:'이어서 하기',secondary:true,click:closeModal}]);}
-function goHome(){if(online){online.leave();online=null;onlineState=null;$('network-bar').hidden=true;}closeModal();paused=false;practice=false;phase='lobby';document.body.classList.add('lobby-view');$('lobby').hidden=false;$('game-ui').hidden=true;$('pause').hidden=$('restart').hidden=true;iceGroup.scale.set(1,1,1);createBodies(5,true);aimArrow.visible=playerRing.visible=false;requestAnimationFrame(resize);}
+function goHome(){if(online){online.leave();online=null;onlineState=null;$('network-bar').hidden=true;}$('aim-timer').hidden=true;closeModal();paused=false;practice=false;phase='lobby';document.body.classList.add('lobby-view');$('lobby').hidden=false;$('game-ui').hidden=true;$('pause').hidden=$('restart').hidden=true;iceGroup.scale.set(1,1,1);createBodies(5,true);aimArrow.visible=playerRing.visible=false;requestAnimationFrame(resize);}
 renderer.domElement.addEventListener('pointerdown',e=>{if((online&&onlineLocked)||phase!=='plan'||paused||!bodies[0].alive||e.button>0)return;drag={x:e.clientX,y:e.clientY,angle,id:e.pointerId};renderer.domElement.setPointerCapture(e.pointerId);e.preventDefault();});
 renderer.domElement.addEventListener('pointermove',e=>{if(!drag||paused||phase!=='plan')return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;angle=drag.angle+dx*.008;if(Math.abs(dy)>8)setPower(.25+Math.abs(dy)/180);aimed=true;refreshControls();});
 renderer.domElement.addEventListener('pointerup',e=>{if(!drag)return;drag=null;if(renderer.domElement.hasPointerCapture(e.pointerId))renderer.domElement.releasePointerCapture(e.pointerId);});
@@ -229,7 +229,9 @@ function animateEffects(dt){for(let i=forceArrows.length-1;i>=0;i--){const a=for
 function labelsAndHUD(){if(phase==='lobby')return;const w=world.clientWidth,h=world.clientHeight;bodies.forEach((b,i)=>{projected.set(b.x,b.alive?2.15:.8,b.z).project(camera);const label=labels[i];label.style.left=`${(projected.x*.5+.5)*w}px`;label.style.top=`${(-projected.y*.5+.5)*h}px`;label.style.display=projected.z>1||projected.z<0?'none':'block';label.style.opacity=b.alive?'1':'.55';});$('speed').innerHTML=`${Math.hypot(bodies[0].vx,bodies[0].vz).toFixed(1)} <small>m/s</small>`;$('remaining').innerHTML=`${bodies.filter(b=>b.alive).length} <small>마리</small>`;
  const b=bodies[0];aimArrow.position.set(b.x,.18,b.z);aimArrow.setDirection(new T.Vector3(Math.cos(angle),0,Math.sin(angle)));aimArrow.setLength(1.3+power*2.4,.4,.24);playerRing.position.set(b.x,.1,b.z);
 }
+let draftSentAt=0,draftSignature='';
 function frame(now){
+ if(online&&onlineState?.phase==='plan'&&!onlineLocked&&!paused&&bodies[0]?.alive&&now-draftSentAt>200){const signature=[onlineState.turn,angle,power].join(':');if(signature!==draftSignature){draftSentAt=now;draftSignature=signature;online.action('draft',{angle,power,turn:onlineState.turn}).catch(()=>{});}}
  const dt=Math.min((now-last)/1000,.05);last=now;clock+=dt;
  if(online&&onlineState)updateOnlineVisuals(dt);
  else if(!paused){bodies.forEach((b,i)=>b.model.userData.torso.rotation.z=Math.sin(clock*.8+i)*.035);animateEffects(dt);}
@@ -277,6 +279,7 @@ function receiveOnline(s){
  if(s.phase==='plan')$('state-title').textContent=bodies[0].alive?'어디로 밀어볼까?':'친구들의 승부를 지켜보자';
  scoreUI();refreshControls();
  if(onlineLocked&&s.phase==='plan'){$('aim-status').textContent='확정 완료! 친구를 기다려요.';$('launch').disabled=true;aimArrow.visible=bodies[0].alive;}
+ const timer=$('aim-timer');timer.hidden=s.phase!=='plan'||!bodies[0]?.alive;const remaining=Math.max(0,Math.ceil((s.deadline-s.now)/1000));timer.textContent=onlineLocked?'확정 완료':remaining+'초';timer.classList.toggle('urgent',!onlineLocked&&remaining<=3);
  const humans=s.members.length;$('network-bar').textContent=`자동 매칭 · 사람 ${humans}명 + AI ${5-humans}마리 · ${s.phase==='plan'?`확정 ${s.members.filter(m=>s.ready.includes(m.slot)&&s.bodies[m.slot]?.alive).length}명 · ${Math.max(0,Math.ceil((s.deadline-s.now)/1000))}초 남음`:s.phase==='quiz'?'함께 퀴즈를 푸는 중':s.phase==='finished'?'경기 종료':'같은 서버에서 함께 진행 중'}`;
  for(const event of s.events){if(event.seq<=onlineEvent)continue;onlineEvent=event.seq;
   if(event.type==='collision'){const a=bodies.find(b=>b.serverId===event.a),b=bodies.find(b=>b.serverId===event.b);if(a&&b)forcePair(a,b,event.nx,event.nz,event.impulse);}
@@ -307,6 +310,8 @@ function updateOnlineVisuals(dt){
  syncModels(dt);animateEffects(dt);maybeShowDefeat(dt);
 }
 
+$('fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else{await document.documentElement.requestFullscreen();try{await screen.orientation.lock('landscape');}catch{}}}catch{notify('폰을 가로로 돌려서 플레이해 주세요!');}};
+document.addEventListener('fullscreenchange',()=>{$('fullscreen').textContent=document.fullscreenElement?'화면 줄이기':'전체 화면';requestAnimationFrame(resize);});
 createBodies(5,true);aimArrow.visible=playerRing.visible=false;requestAnimationFrame(frame);showConcept();
 
 })();

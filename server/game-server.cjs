@@ -30,11 +30,11 @@ function broadcast(r){for(const m of r.members)if(m.stream&&!m.stream.destroyed)
 function newRound(r){r.bodies=Array.from({length:r.capacity||5},(_,id)=>{const a=id/5*Math.PI*2+Math.PI/2;return {id,name:r.members.find(m=>m.slot===id)?.name||NAMES[id],x:Math.cos(a)*2.9,z:Math.sin(a)*2.9,vx:0,vz:0,mass:1,alive:true};});r.size=P.START_SIZE;r.turn=1;r.stall=0;r.lastSurvivors=5;r.members.forEach(m=>{m.feedback=null;});newTurn(r);}
 function newTurn(r){const n=r.bodies.filter(b=>b.alive).length;if(n<=1){endRound(r);return;}
  if(n<r.lastSurvivors)r.stall=0;else if(r.turn>1)r.stall++;const before=r.size;r.size=P.nextSize(r.bodies,r.size,r.stall);r.lastSurvivors=n;if(r.size<before-.01){emit(r,'shrink',{size:r.size});for(const b of r.bodies)if(b.alive){r.levels[b.id]++;award(r,b.id,10,'shrink');}}
- r.hitPairs=new Set();r.plans=new Map();r.phase='plan';r.deadline=r.solo?0:Date.now()+25000;
+ r.hitPairs=new Set();r.plans=new Map();r.phase='plan';r.deadline=Date.now()+10000;r.drafts=new Map();
 }
 function everyonePlanned(r){const humans=r.members.filter(m=>r.bodies[m.slot]?.alive);return humans.every(m=>m.stream&&r.plans.has(m.slot));}
 function countdown(r){if(r.phase!=='plan')return;
- for(const b of r.bodies)if(b.alive&&!r.plans.has(b.id))r.plans.set(b.id,P.aiPlan(b,r.bodies,r.size));
+ for(const b of r.bodies)if(b.alive&&!r.plans.has(b.id))r.plans.set(b.id,r.members.some(m=>m.slot===b.id)?r.drafts.get(b.id)||{angle:Math.atan2(-b.z,-b.x),power:.45}:P.aiPlan(b,r.bodies,r.size));
  r.phase='countdown';r.deadline=Date.now()+1200;emit(r,'countdown');
 }
 function startSimulation(r){for(const b of r.bodies)if(b.alive){const plan=r.plans.get(b.id);P.launch(b,plan.angle,plan.power);}r.phase='simulate';r.simTime=0;r.rest=0;r.acc=0;emit(r,'launch');}
@@ -60,6 +60,7 @@ function action(r,m,body){r.updated=Date.now();
  switch(body.type){
  case 'start':if(r.host!==m.token)error('방장만 시작할 수 있어요.',403);if(!['waiting','finished'].includes(r.phase))error('이미 경기 중이에요.');r.scores.fill(0);r.points.fill(0);r.levels.fill(1);r.round=1;r.members.forEach(p=>{p.learning=0;p.correct=0;p.answers=0;p.answeredRound=0;p.readyRound=0;});newRound(r);break;
  case 'pause':if(!r.solo)error('함께하는 경기는 멈출 수 없어요.');r.paused=!r.paused;break;
+ case 'draft':if(r.phase==='plan'&&!r.paused&&body.turn===r.turn&&r.bodies[m.slot]?.alive&&!r.plans.has(m.slot)&&Number.isFinite(body.angle)&&Number.isFinite(body.power))r.drafts.set(m.slot,{angle:body.angle%(Math.PI*2),power:Math.max(.1,Math.min(1,body.power))});return;
  case 'plan':if(r.phase!=='plan'||!r.bodies[m.slot]?.alive)error('지금은 조준할 수 없어요.');if(r.plans.has(m.slot))error('이미 방향을 확정했어요.');if(!Number.isFinite(body.angle)||!Number.isFinite(body.power))error('방향이나 세기가 올바르지 않아요.');r.plans.set(m.slot,{angle:body.angle%(Math.PI*2),power:Math.max(.1,Math.min(1,body.power))});if(everyonePlanned(r))countdown(r);break;
  case 'answer':if(r.phase!=='quiz'||m.feedback)error('이미 퀴즈를 풀었거나 퀴즈 시간이 아니에요.');if(!Number.isInteger(body.answer)||body.answer<0||body.answer>2)error('답을 골라주세요.');const q=QUIZZES[r.quizIndices[m.quizStep||0]],ok=body.answer===q.ok;m.answers++;if(m.quizStep===2)m.answeredRound=r.round;if(ok){m.correct++;}m.feedback={ok,answer:body.answer,correct:q.ok,why:q.why};break;
  case 'continue':if(r.phase!=='quiz'||!m.feedback)error('퀴즈를 먼저 풀어주세요.');if(m.quizStep<2){m.quizStep++;m.feedback=null;break;}m.readyRound=r.round;if(r.members.filter(p=>p.stream).every(p=>p.readyRound===r.round))afterQuiz(r);break;
