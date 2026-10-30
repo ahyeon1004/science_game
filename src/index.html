@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#eaf5f5"><meta name="description" content="남극 빙판에서 만나는 뉴턴 제3법칙. 펭귄 다섯 마리의 3D 밀치기 대전, 얼음땡."><title>얼음땡 — 펭귄들의 남극 대전</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='20' fill='%231a4357'/%3E%3Cellipse cx='32' cy='34' rx='19' ry='24' fill='white'/%3E%3Ccircle cx='25' cy='26' r='3'/%3E%3Ccircle cx='39' cy='26' r='3'/%3E%3Cpath d='m27 34 5 7 5-7' fill='%23edb46e'/%3E%3C/svg%3E"><link rel="stylesheet" href="style.css"></head>
+<body class="lobby-view">
+<header class="topbar"><a class="brand" href="#" id="home" aria-label="얼음땡 처음으로"><span class="brand-mark">❄</span> 얼음땡<span class="brand-en">ICE, ICE, PENGUIN.</span></a><div class="top-actions"><button id="leaderboard" class="icon-btn">랭킹</button><button id="account" class="icon-btn">로그인 / 회원가입</button><button id="sound" class="icon-btn" aria-label="소리 켜기">소리 꺼짐</button><button id="pause" class="icon-btn" hidden>일시정지</button><button id="restart" class="icon-btn" hidden>새 경기</button></div></header>
+<main id="app">
+<div id="world" role="img" aria-label="펭귄 다섯 마리와 남극의 3D 빙판 경기장"><div id="loading">남극으로 가는 중…</div></div>
+<section id="lobby" class="lobby">
+<h1>얼음 ..<br><em>땡 !!!</em></h1>
+<div class="lobby-config"><label class="field-label">내 목도리 색 <span>나는 ‘땡이’</span></label><div id="colors" class="swatches" role="group" aria-label="목도리 색"></div><div class="count-row"><label for="players">함께할 펭귄</label><select id="players"><option value="5">5마리 · 혼자 하기</option><option value="4">4마리 · 혼자 하기</option></select></div></div>
+<button id="start" class="primary start-button">게임 시작 <span>↗</span></button><button id="friends" class="secondary-button">온라인 자동 매칭 →</button>
+
+</section>
+<div id="lobby-scene-caption" class="scene-caption"><span>ANTARCTICA · 90° S</span><strong>차가운 빙판, 뜨거운 눈치 싸움.</strong><small>크기가 같고 방향은 반대. 부딪히면 알게 될 거야.</small></div>
+<section id="game-ui" hidden><div id="network-bar" class="network-bar" hidden></div>
+<div class="match-top"><div><span class="eyebrow" id="round-label">ROUND 01</span><h2 id="state-title">어디로 밀어볼까?</h2></div><div class="turn-tag" id="turn-label">TURN 01</div></div>
+<div class="live-metrics" aria-label="실시간 경기 정보"><div><span>내 속력</span><strong id="speed">0.0 <small>m/s</small></strong></div><div><span>남은 펭귄</span><strong id="remaining">5 <small>마리</small></strong></div><div><span>이번 기록</span><strong id="learning">0 <small>점</small></strong></div></div>
+<div id="banner" class="arena-banner" role="status" aria-live="polite"></div>
+<div class="view-hint" id="view-hint" hidden>따라가기 시점 · 좌우 드래그로 방향 / 위아래로 세기</div><div id="labels" class="penguin-labels" aria-hidden="true"></div>
+<div id="collision-notice" class="collision-notice" role="status" aria-live="polite" hidden></div>
+<div class="control-dock"><div class="aim-copy"><span class="eyebrow" id="control-label">YOUR MOVE</span><strong id="aim-status">빙판을 드래그해서 조준해!</strong><small id="control-help">드래그 방향으로 돌진 · 길게 끌수록 강하게</small></div><div class="power-control"><label for="power">돌진 세기 <strong id="power-value">50%</strong></label><input id="power" type="range" min="10" max="100" value="50" aria-label="돌진 세기"></div><button id="launch" class="primary">돌진 확정 <span>↗</span></button></div>
+<div class="stage-foot"><span>마지막까지 남으면 1점 · 먼저 3점이면 우승</span><button id="help" class="text-btn">조작법 / 과학 개념</button></div>
+</section>
+</main>
+<div id="modal" class="modal" hidden><section class="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1"><span id="modal-kicker" class="eyebrow"></span><h2 id="modal-title"></h2><div id="modal-content"></div><div id="modal-actions" class="modal-actions"></div></section></div>
+<div id="toast" class="toast" role="status" hidden></div>
+<script src="../vendor/three.min.js"></script><script src="physics.js"></script><script src="quizzes.js"></script><script src="online.js"></script><script src="account.js"></script><script src="game.js"></script>
+</body></html>

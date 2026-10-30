@@ -1,0 +1,12 @@
+{
+  "name": "ice-ice-penguin",
+  "version": "1.1.0",
+  "private": true,
+  "description": "얼음땡 — 사각 빙판에서 배우는 작용·반작용",
+  "scripts": {
+    "start": "node server/game-server.cjs",
+    "build": "python3 src/build.py"
+  },
+  "engines": { "node": ">=18" },
+  "dependencies": {}
+}
