@@ -7,6 +7,10 @@
     "start": "node server/game-server.cjs",
     "build": "python3 src/build.py"
   },
-  "engines": { "node": ">=18" },
-  "dependencies": {}
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "pg": "^8.23.1"
+  }
 }

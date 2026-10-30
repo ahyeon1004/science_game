@@ -1,6 +1,10 @@
 .git
-.DS_Store
 node_modules
-*.log
-
-data/
+data
+*.zip
+.env
+.env.*
+.mcp.json
+README.md
+AGENTS.md
+CLAUDE.md

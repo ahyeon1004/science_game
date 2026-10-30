@@ -1,0 +1,3 @@
+[mcp_servers.science26]
+url = "https://science26-upload.bssm.dev/api/mcp"
+bearer_token_env_var = "SCIENCE26_TOKEN"

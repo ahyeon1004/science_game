@@ -2,3 +2,11 @@
 data/
 node_modules/
 *.log
+[ -s .gitignore ] && [ -n "$(tail -c1 .gitignore)" ] && echo >> .gitignore; for f in '.mcp.json' '.cursor/mcp.json' '.vscode/mcp.json' '.codex/config.toml' 'opencode.json' '.env' '.env.*'; do grep -qxF "$f" .gitignore 2>/dev/null || echo "$f" >> .gitignore; done*.zip
+.mcp.json
+.cursor/mcp.json
+.vscode/mcp.json
+.codex/config.toml
+opencode.json
+.env
+.env.*
